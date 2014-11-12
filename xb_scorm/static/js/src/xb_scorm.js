@@ -90,6 +90,16 @@ function XblockSCORM(runtime, element) {
                 success: report,
             });
         }
+        this.scorm_test = function() {
+            console.log("Test");
+            var handlerUrl = runtime.handlerUrl( element,'scorm_test');
+            $.ajax({
+                type: "POST",
+                url: handlerUrl,
+                data: JSON.stringify({}),
+                success: report,
+            });
+        }
     }
 
     $(function ($) {
