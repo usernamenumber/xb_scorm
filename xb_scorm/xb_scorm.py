@@ -67,23 +67,13 @@ class XblockSCORM(XBlock):
     @XBlock.json_handler
     def scorm_set_value(self, data, suffix=''):
         """
-        SCORM API handler to report data to the LMS
+        SCORM API handler to receive data from the SCO
         
-        Interestingly, even with the locks, if you read/write to/from
-        self.scorm_data directly, you still have the race condition.
-        
-        Maybe something to do with the caching mechanism (which,
-        it should be noted, this approach bypasses and thus does not
-        benefit from). TODO: More research into why that doesn't work.
-        """   
-        self.lock.acquire()
-        try:
-            scorm_data = self._field_data.get(self,"scorm_data")
-        except KeyError:
-            scorm_data = {}
-        scorm_data.update(data)
-        self._field_data.set(self,"scorm_data", scorm_data)
-        self.lock.release()
+        Just calls scorm_commit(), since the current js API
+        handler caches data client-side, and it shouldn't 
+        actually get set until commit() is called.
+        """
+        return self.scorm_commit(data,suffix)
 
     @XBlock.json_handler
     def scorm_get_value(self, data, suffix=''):
@@ -123,7 +113,15 @@ class XblockSCORM(XBlock):
         """
         SCORM API handler to permanently store data in the LMS
         """
-        return self.publish_scorm_data(data)
+        ## TODO: Locks no longer necessary?
+        self.lock.acquire()
+        try:
+            scorm_data = self._field_data.get(self,"scorm_data")
+        except KeyError:
+            scorm_data = {}
+        scorm_data.update(data)
+        self._field_data.set(self,"scorm_data", scorm_data)
+        self.lock.release()
        
     @XBlock.json_handler
     def scorm_finish(self, data, suffix=""):
@@ -133,7 +131,10 @@ class XblockSCORM(XBlock):
         return self.publish_scorm_data(data)
 
     def publish_scorm_data(self,data):
-        return
+        """
+        Emit relevant events to the edx analytics system
+        """
+        return True
         
 
     @staticmethod

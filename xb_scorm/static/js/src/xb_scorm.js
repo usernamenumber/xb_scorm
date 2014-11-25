@@ -2,13 +2,18 @@
     
 function XblockSCORM(runtime, element) {	
     function report(data) {
-    	for (var key in data) {
-    		console.log("Data returned from server: " + key + " = " + data[key]);
-    	}
+        for (var key in data) {
+            console.log("Data returned from server: " + key + " = " + data[key]);
+        }
     }
     function SCORM_API() {
+        this.buffer = {}
+        this.clear_buffer = function() {
+            this.buffer = {} ;  
+        }
         this.LMSInitialize = function() {
             console.log("LMSInitialize")
+            this.clear_buffer();
             return "true"; 
         }
         this.LMSFinish = function() {
@@ -35,26 +40,23 @@ function XblockSCORM(runtime, element) {
             return "true";
         }
         this.LMSSetValue = function(cmi_element,value) {
-            //console.log("LMSSetValue");
             console.log("LMSSetValue " + cmi_element + " = " + value);
-            var data = new function() { this[cmi_element] = value };
-            var handlerUrl = runtime.handlerUrl( element,'scorm_set_value');
-            $.ajax({
-                type: "POST",
-                url: handlerUrl,
-                data: JSON.stringify(data),
-                success: report,
-            });
+            this.buffer[cmi_element] = value ;
+            // TODO: handle failure at all
             return "true";
         }        	
         this.LMSCommit = function() {
             console.log("LMSCommit");
-            var handlerUrl = runtime.handlerUrl( element,'scorm_commit');
+            var handlerUrl = runtime.handlerUrl( element,'scorm_set_value');
             $.ajax({
                 type: "POST",
                 url: handlerUrl,
-                data: JSON.stringify({}),
-                success: report,
+                data: JSON.stringify(this.buffer),
+                context: this,
+                success: function() { 
+                    this.clear_buffer();
+                    report(); 
+                },
             });
             return "true";
         }
@@ -68,7 +70,7 @@ function XblockSCORM(runtime, element) {
         }
         this.LMSGetDiagnostic = function(errorCode) {
             console.log("LMSGetDiagnostic");
-            return "Some Diagnostice";
+            return "Some Diagnostic";
         }        
         this.scorm_clear = function() {
             console.log("Clear");
